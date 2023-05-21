@@ -38,6 +38,10 @@ export default {
       return this.graph.map(
         (price) => 5 + ((price - minVaiue) * 95) / (maxValue - minVaiue)
       );
+    },
+    select(ticker) {
+      this.sel = ticker;
+      this.graph = [];
     }
   }
 };
@@ -141,7 +145,7 @@ export default {
           <div
             v-for="t in tickers"
             :key="t.name"
-            @click="sel = t"
+            @click="select(t)"
             :class="{
               'border-4': sel === t
             }"
@@ -187,7 +191,7 @@ export default {
             v-for="(bar, idx) in normalizeGraph()"
             :key="idx"
             :style="{ height: `${bar}%` }"
-            class="bg-purple-800 border w-4 h-20"
+            class="bg-purple-800 border w-4 h-24"
           ></div>
         </div>
         <button

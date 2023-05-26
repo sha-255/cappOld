@@ -45,8 +45,9 @@
             </div>
             <div class="flex bg-white shadow-md p-1 rounded-md flex-wrap">
               <span
-                v-for="(coin, idx) in coins"
+                v-for="(coin, idx) in coinsSearch"
                 :key="idx"
+                @click="tickerInput = coin"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
                 {{ coin }}
@@ -171,33 +172,41 @@ export default {
     return {
       tickerInput: "",
       tickers: [],
+      intervals: [],
       sel: null,
       graph: [],
       isStarted: true,
-      coins: ["BTC", "DOGE", "BCH", "CHD"]
+      coinsSearch: ["BTC", "DOGE", "BCH", "CHD"]
     };
   },
   methods: {
     add() {
+      if (this.checkTicer(this.tickerInput)) return;
       const currentTicker = {
         name: this.tickerInput,
         price: "-"
       };
       this.tickers.push(currentTicker);
-      setInterval(async () => {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=4302c479b9cec17604db7af005cb60a54b9d1079a8b58fd18ba964bc6d16826d`
-        );
-        const data = await f.json();
-        this.tickers.find((t) => t.name === currentTicker.name).price =
-          data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-        if (this.sel?.name === currentTicker.name) {
-          this.graph.push(data.USD);
-        }
-      }, 10000);
+      this.intervals.push({
+        name: currentTicker.name,
+        interval: setInterval(async () => {
+          const f = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=4302c479b9cec17604db7af005cb60a54b9d1079a8b58fd18ba964bc6d16826d`
+          );
+          const data = await f.json();
+          this.tickers.find((t) => t.name === currentTicker.name).price =
+            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+          if (this.sel?.name === currentTicker.name) {
+            this.graph.push(data.USD);
+          }
+        }, 10_000)
+      });
       this.tickerInput = "";
     },
     handleDelete(tickerToRemove) {
+      clearInterval(
+        this.intervals.find((i) => i.name === tickerToRemove.name).interval
+      );
       this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
     },
     normalizeGraph() {
@@ -211,14 +220,16 @@ export default {
       this.sel = ticker;
       this.graph = [];
     },
-    checkTicer(ticker) {
-      ticker;
-      return false;
+    checkTicer(tickerIn) {
+      let result = false;
+      this.tickers.forEach((ticker) => {
+        if (ticker.name === tickerIn) result = true;
+      });
+      return result;
     }
   },
   mounted() {
     this.isStarted = false;
-    console.log("mounted");
   }
 };
 </script>

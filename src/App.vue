@@ -53,7 +53,7 @@
                 {{ coin }}
               </span>
             </div>
-            <div v-if="checkTicer(tickerInput)" class="text-sm text-red-600">
+            <div v-if="errVisible" class="text-sm text-red-600">
               Такой тикер уже добавлен
             </div>
           </div>
@@ -173,6 +173,7 @@ export default {
       tickerInput: "",
       tickers: [],
       intervals: [],
+      errVisible: false,
       sel: null,
       graph: [],
       isStarted: true,
@@ -181,7 +182,13 @@ export default {
   },
   methods: {
     add() {
-      if (this.checkTicer(this.tickerInput)) return;
+      if (this.checkTicer(this.tickerInput)) {
+        this.errVisible = true;
+        return;
+      }
+      if (!this.coinsSearch.find((coin) => this.tickerInput === coin)) {
+        return;
+      }
       const currentTicker = {
         name: this.tickerInput,
         price: "-"
@@ -230,6 +237,15 @@ export default {
   },
   mounted() {
     this.isStarted = false;
+  },
+  async beforeMount() {
+    const data = async () => {
+      const f = await fetch(
+        `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`
+      );
+      return await f.json();
+    };
+    console.log(await data());
   }
 };
 </script>

@@ -36,6 +36,7 @@
               <input
                 v-model="tickerInput"
                 v-on:keydown.enter="add"
+                @keydown="onTextChanging"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -177,7 +178,8 @@ export default {
       sel: null,
       graph: [],
       isStarted: true,
-      coinsSearch: ["BTC", "DOGE", "BCH", "CHD"]
+      coinsSearch: ["BTC", "DOGE", "BCH", "CHD"],
+      coinsNames: []
     };
   },
   methods: {
@@ -186,7 +188,7 @@ export default {
         this.errVisible = true;
         return;
       }
-      if (!this.coinsSearch.find((coin) => this.tickerInput === coin)) {
+      if (!this.coinsNames.find((coin) => this.tickerInput === coin)) {
         return;
       }
       const currentTicker = {
@@ -209,6 +211,9 @@ export default {
         }, 10_000)
       });
       this.tickerInput = "";
+    },
+    onTextChanging() {
+      return;
     },
     handleDelete(tickerToRemove) {
       clearInterval(
@@ -245,7 +250,8 @@ export default {
       );
       return await f.json();
     };
-    console.log(await data());
+    const tmp = await data();
+    this.coinsNames = Object.keys(tmp.Data);
   }
 };
 </script>

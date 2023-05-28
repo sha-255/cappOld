@@ -44,7 +44,10 @@
                 placeholder="Например DOGE"
               />
             </div>
-            <div class="flex bg-white shadow-md p-1 rounded-md flex-wrap">
+            <div
+              v-if="coinsSearch.length > 0"
+              class="flex bg-white shadow-md p-1 rounded-md flex-wrap"
+            >
               <span
                 v-for="(coin, idx) in coinsSearch"
                 :key="idx"
@@ -179,6 +182,7 @@ export default {
       graph: [],
       isStarted: true,
       coinsSearch: ["BTC", "DOGE", "BCH", "CHD"],
+      //coinsSearch: [],
       coinsNames: []
     };
   },
@@ -213,7 +217,7 @@ export default {
       this.tickerInput = "";
     },
     onTextChanging() {
-      return;
+      this.errVisible = false;
     },
     handleDelete(tickerToRemove) {
       clearInterval(

@@ -35,8 +35,8 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="tickerInput"
-                v-on:keydown.enter="add"
-                @keydown="onTextChanging"
+                v-on:keydown.enter="handleAdd"
+                @keyup="onTextChanging"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -48,6 +48,7 @@
               v-if="coinsSearch.length > 0"
               class="flex bg-white shadow-md p-1 rounded-md flex-wrap"
             >
+              <!-- @click="handleAutocompleteAdd(coin)" -->
               <span
                 v-for="(coin, idx) in coinsSearch"
                 :key="idx"
@@ -63,7 +64,7 @@
           </div>
         </div>
         <button
-          @click="add"
+          @click="handleAdd"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -181,22 +182,24 @@ export default {
       sel: null,
       graph: [],
       isStarted: true,
-      coinsSearch: ["BTC", "DOGE", "BCH", "CHD"],
-      //coinsSearch: [],
+      coinsSearch: [],
       coinsNames: []
     };
   },
   methods: {
-    add() {
-      if (this.checkTicer(this.tickerInput)) {
+    handleAdd() {
+      const tickerName = this.coinsNames.find(
+        (coin) => this.tickerInput.toLowerCase() === coin.toLowerCase()
+      );
+      if (this.checkTicer(tickerName)) {
         this.errVisible = true;
         return;
       }
-      if (!this.coinsNames.find((coin) => this.tickerInput === coin)) {
+      if (!tickerName) {
         return;
       }
       const currentTicker = {
-        name: this.tickerInput,
+        name: tickerName,
         price: "-"
       };
       this.tickers.push(currentTicker);
@@ -204,7 +207,9 @@ export default {
         name: currentTicker.name,
         interval: setInterval(async () => {
           const f = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=4302c479b9cec17604db7af005cb60a54b9d1079a8b58fd18ba964bc6d16826d`
+            `https://min-api.cryptocompare.com` +
+              `/data/price?fsym=${currentTicker.name}&tsyms=USD&` +
+              `api_key=4302c479b9cec17604db7af005cb60a54b9d1079a8b58fd18ba964bc6d16826d`
           );
           const data = await f.json();
           this.tickers.find((t) => t.name === currentTicker.name).price =
@@ -215,15 +220,30 @@ export default {
         }, 10_000)
       });
       this.tickerInput = "";
-    },
-    onTextChanging() {
-      this.errVisible = false;
+      this.coinsSearch = [];
     },
     handleDelete(tickerToRemove) {
+      if (tickerToRemove === this.sel) this.sel = null;
       clearInterval(
         this.intervals.find((i) => i.name === tickerToRemove.name).interval
       );
       this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
+    },
+    onTextChanging() {
+      this.errVisible = false;
+      if (this.tickerInput === "") {
+        this.coinsSearch = [];
+      } else {
+        const correctCoins = this.coinsNames.filter((coin) =>
+          coin.toLowerCase().includes(this.tickerInput.toLowerCase())
+        );
+        this.coinsSearch = correctCoins.filter(
+          (coin) => correctCoins.indexOf(coin) <= 4
+        );
+      }
+    },
+    handleAutocompleteAdd(coin) {
+      this.handleAdd(coin);
     },
     normalizeGraph() {
       const maxValue = Math.max(...this.graph);
@@ -244,10 +264,12 @@ export default {
       return result;
     }
   },
-  mounted() {
-    this.isStarted = false;
-  },
-  async beforeMount() {
+  // watch: {
+  //   tickerInput: function () {
+  //     this.onTextChanging();
+  //   }
+  // },
+  async mounted() {
     const data = async () => {
       const f = await fetch(
         `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`
@@ -256,6 +278,7 @@ export default {
     };
     const tmp = await data();
     this.coinsNames = Object.keys(tmp.Data);
+    this.isStarted = false;
   }
 };
 </script>

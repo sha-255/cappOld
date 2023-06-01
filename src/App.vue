@@ -35,8 +35,7 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="tickerInput"
-                v-on:keydown.enter="handleAdd"
-                @keyup="onTextChanging"
+                v-on:keyup.enter="handleAdd(this.tickerInput)"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -48,11 +47,10 @@
               v-if="coinsSearch.length > 0"
               class="flex bg-white shadow-md p-1 rounded-md flex-wrap"
             >
-              <!-- @click="handleAutocompleteAdd(coin)" -->
               <span
                 v-for="(coin, idx) in coinsSearch"
                 :key="idx"
-                @click="tickerInput = coin"
+                @click="autocompleteAdd(coin)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
                 {{ coin }}
@@ -64,7 +62,7 @@
           </div>
         </div>
         <button
-          @click="handleAdd"
+          @click="handleAdd(this.tickerInput)"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -187,9 +185,38 @@ export default {
     };
   },
   methods: {
-    handleAdd() {
+    handleAdd(name) {
+      this.addByName(name);
+      this.coinsSearch = [];
+      if (this.errVisible) return;
+      this.tickerInput = "";
+    },
+    autocompleteAdd(name) {
+      this.addByName(name);
+    },
+    handleDelete(tickerToRemove) {
+      if (tickerToRemove === this.sel) this.sel = null;
+      clearInterval(
+        this.intervals.find((i) => i.name === tickerToRemove.name).interval
+      );
+      this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
+    },
+    onTextChanging() {
+      this.errVisible = false;
+      if (this.tickerInput === "") {
+        this.coinsSearch = [];
+      } else {
+        const correctCoins = this.coinsNames.filter((coin) =>
+          coin.toLowerCase().includes(this.tickerInput.toLowerCase())
+        );
+        this.coinsSearch = correctCoins.filter(
+          (coin) => correctCoins.indexOf(coin) <= 4
+        );
+      }
+    },
+    addByName(name) {
       const tickerName = this.coinsNames.find(
-        (coin) => this.tickerInput.toLowerCase() === coin.toLowerCase()
+        (coin) => name.toLowerCase() === coin.toLowerCase()
       );
       if (this.checkTicer(tickerName)) {
         this.errVisible = true;
@@ -219,31 +246,6 @@ export default {
           }
         }, 10_000)
       });
-      this.tickerInput = "";
-      this.coinsSearch = [];
-    },
-    handleDelete(tickerToRemove) {
-      if (tickerToRemove === this.sel) this.sel = null;
-      clearInterval(
-        this.intervals.find((i) => i.name === tickerToRemove.name).interval
-      );
-      this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
-    },
-    onTextChanging() {
-      this.errVisible = false;
-      if (this.tickerInput === "") {
-        this.coinsSearch = [];
-      } else {
-        const correctCoins = this.coinsNames.filter((coin) =>
-          coin.toLowerCase().includes(this.tickerInput.toLowerCase())
-        );
-        this.coinsSearch = correctCoins.filter(
-          (coin) => correctCoins.indexOf(coin) <= 4
-        );
-      }
-    },
-    handleAutocompleteAdd(coin) {
-      this.handleAdd(coin);
     },
     normalizeGraph() {
       const maxValue = Math.max(...this.graph);
@@ -264,11 +266,11 @@ export default {
       return result;
     }
   },
-  // watch: {
-  //   tickerInput: function () {
-  //     this.onTextChanging();
-  //   }
-  // },
+  watch: {
+    tickerInput: function () {
+      this.onTextChanging();
+    }
+  },
   async mounted() {
     const data = async () => {
       const f = await fetch(

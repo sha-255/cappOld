@@ -83,9 +83,44 @@
       </section>
       <template v-if="tickers.length > 0">
         <hr class="w-full border-t border-gray-600 my-4" />
+        <div class="flex">
+          <button
+            @click="page -= 1"
+            v-if="page > 1"
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Назад</button
+          ><button
+            @click="page += 1"
+            v-if="hasNextPage"
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Вперёд
+          </button>
+          <div class="flex mx-2">
+            <div class="max-w-xs">
+              <label
+                for="wallet"
+                class="block text-sm font-medium text-gray-700"
+              >
+                Фильтр:
+              </label>
+              <div class="mt-1 relative rounded-md shadow-md">
+                <input
+                  v-model="filter"
+                  type="text"
+                  name="wallet"
+                  id="wallet"
+                  class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in tickers"
+            v-for="t in filteredTickers()"
             :key="t.name"
             @click="select(t)"
             :class="{
@@ -125,7 +160,7 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <section v-if="sel" class="relative">
+      <section v-if="sel && sel.price !== undefText" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ sel.name }} - USD
         </h3>
@@ -181,16 +216,29 @@ export default {
     return {
       tickerInput: "",
       tickers: [],
+      undefText: "Не определён",
       intervals: [],
       errVisible: false,
       sel: null,
       graph: [],
       isStarted: true,
       coinsSearch: [],
-      coinsNames: []
+      coinsNames: [],
+      page: 1,
+      filter: "",
+      hasNextPage: true
     };
   },
   methods: {
+    filteredTickers() {
+      const start = (this.page - 1) * 6;
+      const end = this.page * 6;
+      const filteredTicers = this.tickers.filter((ticer) =>
+        ticer.name.toLowerCase().includes(this.filter.toLowerCase())
+      );
+      this.hasNextPage = filteredTicers.length > end;
+      return filteredTicers.slice(start, end);
+    },
     handleAdd(name) {
       this.addByName(name);
       this.coinsSearch = [];
@@ -237,6 +285,7 @@ export default {
       this.tickers.push(currentTicker);
       localStorage.setItem("capp-list", JSON.stringify(this.tickers));
       this.subscribeByUpdate(currentTicker.name);
+      this.filter = "";
     },
     subscribeByUpdate(tickerName) {
       this.intervals.push({
@@ -248,8 +297,12 @@ export default {
               `api_key=4302c479b9cec17604db7af005cb60a54b9d1079a8b58fd18ba964bc6d16826d`
           );
           const data = await f.json();
-          this.tickers.find((t) => t.name === tickerName).price =
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+          if (data.USD)
+            this.tickers.find((t) => t.name === tickerName).price =
+              data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+          else
+            this.tickers.find((t) => t.name === tickerName).price =
+              this.undefText;
           if (this.sel?.name === tickerName) {
             this.graph.push(data.USD);
           }
@@ -276,8 +329,23 @@ export default {
     }
   },
   watch: {
-    tickerInput: function () {
+    tickerInput() {
       this.onTextChanging();
+    },
+    filter() {
+      this.page = 1;
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
+    },
+    page() {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
     }
   },
   async mounted() {
@@ -292,6 +360,15 @@ export default {
     this.isStarted = false;
   },
   created() {
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
+    if (windowData.filter) {
+      this.filter = windowData.filter;
+    }
+    if (windowData.page) {
+      this.page = windowData.page;
+    }
     const ticersData = localStorage.getItem("capp-list");
     if (ticersData) {
       this.tickers = JSON.parse(ticersData);

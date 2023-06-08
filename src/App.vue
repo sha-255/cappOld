@@ -248,7 +248,11 @@ export default {
       ) {
         return price;
       }
-      return price > 1 ? price.toFixed(2) : price.toPrecision(2);
+      try {
+        return price > 1 ? price.toFixed(2) : price.toPrecision(2);
+      } catch {
+        return price; //cringe
+      }
     },
     async updateTickers() {
       // if (!this.tickers.length) return;
@@ -351,7 +355,12 @@ export default {
   },
   watch: {
     tickers() {
-      localStorage.setItem("capp-list", JSON.stringify(this.tickers));
+      localStorage.setItem(
+        "capp-list",
+        JSON.stringify(
+          this.tickers.map((t) => (t = { ...t, price: this.loadingPriceText }))
+        )
+      );
     },
     selectedTicker() {
       this.graph = [];
@@ -404,7 +413,7 @@ export default {
         );
       });
     }
-    setInterval(this.updateTickers, 5000); //del
+    //setInterval(this.updateTickers, 5000); //del
   }
 };
 </script>

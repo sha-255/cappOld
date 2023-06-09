@@ -1,14 +1,16 @@
-//const API_KEY =
-//  "d9821aaef961306f2f68b3f0d0e12b60b0c2b2e270e01966c6bd4735c5aba675";
+const API_KEY =
+  "d9821aaef961306f2f68b3f0d0e12b60b0c2b2e270e01966c6bd4735c5aba675";
 
 const tickersHandlers = new Map();
 //TODO: refactor to URLSerch params.
 
-//const socket = new WebSocket(
+const socket = new WebSocket(
   `wss://streamer.cryptocompare.com/v2?api_key=${API_KEY}`
 );
 
 const AGGREGATE_INDEX = "5";
+
+const subscribedTickers = [];
 
 socket.addEventListener("message", (e) => {
   const {
@@ -24,9 +26,10 @@ socket.addEventListener("message", (e) => {
 });
 
 const subscribeToTickerOnWs = (ticker) => {
+  subscribedTickers.push(`5~CCCAGG~${ticker}~USD`);
   const message = JSON.stringify({
     action: "SubAdd",
-    subs: [`5~CCCAGG~${ticker}~USD`]
+    subs: subscribedTickers
   });
   if (socket.readyState === WebSocket.OPEN) {
     socket.send(message);

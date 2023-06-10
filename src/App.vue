@@ -172,7 +172,7 @@
             v-for="(bar, idx) in normalizedGraph"
             :key="idx"
             :style="{ height: `${bar}%` }"
-            class="bg-purple-800 border w-4 h-24 rounded-md"
+            class="bg-purple-800 border w-8 h-24 rounded-full"
           ></div>
         </div>
         <button
@@ -238,6 +238,9 @@ export default {
       this.tickers
         .filter((t) => t.name === tickerName)
         .forEach((t) => {
+          if (t === this.selectedTicker) {
+            this.graph.push(price);
+          }
           t.price = price;
         });
     },
@@ -251,16 +254,8 @@ export default {
       try {
         return price > 1 ? price.toFixed(2) : price.toPrecision(2);
       } catch {
-        return price; //cringe
+        return this.loadingPriceText;
       }
-    },
-    async updateTickers() {
-      // if (!this.tickers.length) return;
-      // const exchangeData = await loadTickers(this.tickers.map((t) => t.name));
-      // this.tickers.forEach((ticker) => {
-      //   const price = exchangeData[ticker.name.toUpperCase()];
-      //   ticker.price = price ?? this.undefinedPriceText;
-      // });
     },
     handleAdd(name) {
       this.addByName(name);

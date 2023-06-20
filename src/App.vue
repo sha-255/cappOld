@@ -1,5 +1,7 @@
 <template>
-  <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
+  <div
+    class="container mx-auto flex flex-col items-center bg-gray-100 p-4 rounded-lg"
+  >
     <div
       v-if="isStarted"
       class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
@@ -167,12 +169,14 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ selectedTicker.name }} - USD
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div
+          class="flex items-end border-gray-600 border-b-4 border-l-4 h-64 rounded-lg"
+        >
           <div
             v-for="(bar, idx) in normalizedGraph"
             :key="idx"
             :style="{ height: `${bar}%` }"
-            class="bg-purple-800 border w-8 h-24 rounded-full"
+            class="bg-transparent border-4 border-purple-800 w-8 h-24 rounded-lg"
           ></div>
         </div>
         <button
@@ -214,7 +218,7 @@
 </template>
 
 <script type="module">
-import { subscribeToTicker, unsubscribeFromTicker } from "./api";
+import { getCoinsNames, subscribeToTicker, unsubscribeFromTicker } from "./api";
 
 export default {
   data() {
@@ -379,19 +383,7 @@ export default {
       );
     }
   },
-  //to api.js
-  async mounted() {
-    const data = async () => {
-      const f = await fetch(
-        `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`
-      );
-      return await f.json();
-    };
-    const tmp = await data();
-    this.coinsNames = Object.keys(tmp.Data);
-    this.isStarted = false;
-  },
-  created() {
+  async created() {
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     );
@@ -408,7 +400,8 @@ export default {
         );
       });
     }
-    //setInterval(this.updateTickers, 5000); //del
+    this.coinsNames = await getCoinsNames();
+    this.isStarted = false;
   }
 };
 </script>

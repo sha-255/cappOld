@@ -1,16 +1,11 @@
 const API_KEY =
   "d9821aaef961306f2f68b3f0d0e12b60b0c2b2e270e01966c6bd4735c5aba675";
-
 const tickersHandlers = new Map();
-//TODO: refactor to URLSerch params.
-
-const socket = new WebSocket(
-  `wss://streamer.cryptocompare.com/v2?api_key=${API_KEY}`
-);
-
 const AGGREGATE_INDEX = "5";
-
 const subscribedTickers = [];
+const wsUrl = new URL("wss://streamer.cryptocompare.com/v2");
+wsUrl.searchParams.set("api_key", API_KEY);
+const socket = new WebSocket(wsUrl);
 
 socket.addEventListener("message", (e) => {
   const {
@@ -56,6 +51,17 @@ const sendToWebSocet = (obj) => {
     },
     { once: true }
   );
+};
+
+export const getCoinsNames = async () => {
+  const url = new URL("https://min-api.cryptocompare.com/data/all/coinlist");
+  url.searchParams.set("summary", true);
+  const data = async () => {
+    const f = await fetch(url);
+    return await f.json();
+  };
+  const tmp = await data();
+  return Object.keys(tmp.Data);
 };
 
 export const subscribeToTicker = (ticker, cb) => {

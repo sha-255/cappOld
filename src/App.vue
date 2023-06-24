@@ -130,7 +130,10 @@
             }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
-            <div class="px-4 py-5 sm:p-6 text-center">
+            <div
+              :class="{ 'bg-red-100': t.price === loadingPriceText }"
+              class="px-4 py-5 sm:p-6 text-center"
+            >
               <dt class="text-sm font-medium text-gray-500 truncate">
                 {{ t.name }} - USD
               </dt>
@@ -177,7 +180,18 @@
             :key="idx"
             :style="{ height: `${bar}%` }"
             class="bg-transparent border-4 border-purple-800 w-8 h-24 rounded-lg"
-          ></div>
+          >
+            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
+            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
+          </div>
         </div>
         <button
           @click="selectedTicker = null"
@@ -219,7 +233,7 @@
 
 <script type="module">
 import { getCoinsNames, subscribeToTicker, unsubscribeFromTicker } from "./api";
-
+//border-gray-600 border-b-4 border-l-4
 export default {
   data() {
     return {
@@ -275,38 +289,25 @@ export default {
     autocompleteAdd(name) {
       this.addByName(name);
     },
-    onTextChanging() {
-      this.errVisible = false;
-      if (this.tickerInput === "") {
-        this.coinsSearch = [];
-      } else {
-        const correctCoins = this.coinsNames.filter((coin) =>
-          coin.toLowerCase().includes(this.tickerInput.toLowerCase())
-        );
-        this.coinsSearch = correctCoins.filter(
-          (coin) => correctCoins.indexOf(coin) <= 4
-        );
-      }
-    },
     addByName(name) {
-      const tickerName = this.coinsNames.find(
-        (coin) => name.toLowerCase() === coin.toLowerCase()
-      );
-      if (this.checkTicer(tickerName)) {
+      const upperName = name.toUpperCase();
+      if (this.checkTicer(upperName)) {
         this.errVisible = true;
         return;
       }
-      if (!tickerName) return;
       const currentTicker = {
-        name: tickerName,
+        name: upperName,
         price: this.loadingPriceText
       };
       this.tickers = [currentTicker, ...this.tickers];
       this.ticker = "";
       this.filter = "";
-      subscribeToTicker(currentTicker.name, (newPrice) =>
-        this.updateTicker(currentTicker.name, newPrice)
-      );
+      subscribeToTicker(currentTicker.name, (newPrice) => {
+        if (newPrice === undefined) {
+          currentTicker.correct = false;
+        }
+        this.updateTicker(currentTicker.name, newPrice);
+      });
     },
     select(ticker) {
       this.selectedTicker = ticker;
@@ -370,7 +371,17 @@ export default {
       }
     },
     tickerInput() {
-      this.onTextChanging();
+      this.errVisible = false;
+      if (this.tickerInput === "") {
+        this.coinsSearch = [];
+      } else {
+        const correctCoins = this.coinsNames.filter((coin) =>
+          coin.toLowerCase().includes(this.tickerInput.toLowerCase())
+        );
+        this.coinsSearch = correctCoins.filter(
+          (coin) => correctCoins.indexOf(coin) <= 4
+        );
+      }
     },
     filter() {
       this.page = 1;

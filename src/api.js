@@ -9,11 +9,13 @@ const socket = new WebSocket(wsUrl);
 
 socket.addEventListener("message", (e) => {
   const {
-    TYPE: type,
+    TYPE: index,
     FROMSYMBOL: currency,
     PRICE: newPrice
   } = JSON.parse(e.data);
-  if (type !== AGGREGATE_INDEX || newPrice === undefined) {
+  window.mes =
+    "currency:-" + currency + "-index:-" + index + "-newPrice:-" + newPrice;
+  if (index !== AGGREGATE_INDEX || newPrice === undefined) {
     return;
   }
   const handlers = tickersHandlers.get(currency) ?? [];
@@ -64,9 +66,9 @@ export const getCoinsNames = async () => {
   return Object.keys(tmp.Data);
 };
 
-export const subscribeToTicker = (ticker, cb) => {
+export const subscribeToTicker = (ticker, callback) => {
   const subscribers = tickersHandlers.get(ticker) || [];
-  tickersHandlers.set(ticker, [...subscribers, cb]);
+  tickersHandlers.set(ticker, [...subscribers, callback]);
   subscribeToTickerOnWs(ticker);
 };
 

@@ -131,7 +131,7 @@
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div
-              :class="{ 'bg-red-100': t.price === loadingPriceText }"
+              :class="{ 'bg-red-100': t.price === undefined }"
               class="px-4 py-5 sm:p-6 text-center"
             >
               <dt class="text-sm font-medium text-gray-500 truncate">
@@ -180,18 +180,7 @@
             :key="idx"
             :style="{ height: `${bar}%` }"
             class="bg-transparent border-4 border-purple-800 w-8 h-24 rounded-lg"
-          >
-            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-10 w-full h-[10%]"></div>
-            <div class="bg-purple-800 opacity-0 w-full h-[10%]"></div>
-          </div>
+          ></div>
         </div>
         <button
           @click="selectedTicker = null"
@@ -256,11 +245,12 @@ export default {
       this.tickers
         .filter((t) => t.name === tickerName)
         .forEach((t) => {
+          t.price = price;
           if (t === this.selectedTicker) {
             this.graph.push(price);
           }
-          t.price = price;
         });
+      console.table(this.tickers);
     },
     formatPrice(price) {
       if (
@@ -318,6 +308,26 @@ export default {
         if (ticker.name === tickerIn) result = true;
       });
       return result;
+    },
+    loadUrlSaves() {
+      const windowData = Object.fromEntries(
+        new URL(window.location).searchParams.entries()
+      );
+      const VALID_KEYS = ["filter", "page"];
+      VALID_KEYS.forEach((key) => {
+        if (windowData[key]) this[key] = windowData[key];
+      });
+    },
+    loadTicersData() {
+      const tickersData = localStorage.getItem("capp-list");
+      if (tickersData) {
+        this.tickers = JSON.parse(tickersData);
+        this.tickers.forEach((ticker) => {
+          subscribeToTicker(ticker.name, (newPrice) =>
+            this.updateTicker(ticker.name, newPrice)
+          );
+        });
+      }
     }
   },
   computed: {
@@ -395,22 +405,8 @@ export default {
     }
   },
   async created() {
-    const windowData = Object.fromEntries(
-      new URL(window.location).searchParams.entries()
-    );
-    const VALID_KEYS = ["filter", "page"];
-    VALID_KEYS.forEach((key) => {
-      if (windowData[key]) this[key] = windowData[key];
-    });
-    const tickersData = localStorage.getItem("capp-list");
-    if (tickersData) {
-      this.tickers = JSON.parse(tickersData);
-      this.tickers.forEach((ticker) => {
-        subscribeToTicker(ticker.name, (newPrice) =>
-          this.updateTicker(ticker.name, newPrice)
-        );
-      });
-    }
+    this.loadUrlSaves();
+    this.loadTicersData();
     this.coinsNames = await getCoinsNames();
     this.isStarted = false;
   }

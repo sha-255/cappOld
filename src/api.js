@@ -2,6 +2,7 @@ const API_KEY =
   "d9821aaef961306f2f68b3f0d0e12b60b0c2b2e270e01966c6bd4735c5aba675";
 const tickersHandlers = new Map();
 const AGGREGATE_INDEX = "5";
+const UCORRECT_MESSAGE = "INVALID_SUB";
 const subscribedTickers = [];
 const wsUrl = new URL("wss://streamer.cryptocompare.com/v2");
 wsUrl.searchParams.set("api_key", API_KEY);
@@ -11,10 +12,31 @@ socket.addEventListener("message", (e) => {
   const {
     TYPE: index,
     FROMSYMBOL: currency,
-    PRICE: newPrice
+    PRICE: newPrice,
+    MESSAGE: message,
+    PARAMETER: request
   } = JSON.parse(e.data);
-  window.mes =
-    "currency:-" + currency + "-index:-" + index + "-newPrice:-" + newPrice;
+  //
+  window.wsMes =
+    "request~" +
+    request +
+    "~rCur~" +
+    (request ?? "").toString().split("~")[2] +
+    "~index:~" +
+    index +
+    "~currency:~" +
+    currency +
+    "~newPrice:~" +
+    newPrice +
+    "~Message:~" +
+    message;
+  if (request) console.log(window.mes);
+  //
+  if (UCORRECT_MESSAGE === message) {
+    const requestCurrency = (request ?? "").toString().split("~")[2];
+    (tickersHandlers.get(requestCurrency) ?? []).forEach((fn) => fn(undefined));
+    unsubscribeFromTicker(requestCurrency);
+  }
   if (index !== AGGREGATE_INDEX || newPrice === undefined) {
     return;
   }

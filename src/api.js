@@ -1,51 +1,49 @@
 const API_KEY =
   "d9821aaef961306f2f68b3f0d0e12b60b0c2b2e270e01966c6bd4735c5aba675";
-const tickersHandlers = new Map();
 const AGGREGATE_INDEX = "5";
 const UCORRECT_MESSAGE = "INVALID_SUB";
-const subscribedTickers = [];
+const PRICE_CURRENCY = "USD"; //USD BTC ETH
 const wsUrl = new URL("wss://streamer.cryptocompare.com/v2");
 wsUrl.searchParams.set("api_key", API_KEY);
 const socket = new WebSocket(wsUrl);
+const tickersHandlers = new Map();
+const subscribedTickers = [];
 
-socket.addEventListener("message", (e) => {
+// subscribedTickers.push(`${AGGREGATE_INDEX}~CCCAGG~${sendedCurrency}~ETH`);
+// sendToWebSocet({
+//   action: "SubAdd",
+//   subs: subscribedTickers
+// });
+
+// updateHandler(sendedCurrency);
+// unsubscribeFromTicker(sendedCurrency);
+
+socket.addEventListener("message", (eventMessage) => {
   const {
     TYPE: index,
     FROMSYMBOL: currency,
     PRICE: newPrice,
-    MESSAGE: message,
-    PARAMETER: request
-  } = JSON.parse(e.data);
-  //
-  window.wsMes =
-    "request~" +
-    request +
-    "~rCur~" +
-    (request ?? "").toString().split("~")[2] +
-    "~index:~" +
-    index +
-    "~currency:~" +
-    currency +
-    "~newPrice:~" +
-    newPrice +
-    "~Message:~" +
-    message;
-  if (request) console.log(window.mes);
-  //
-  if (UCORRECT_MESSAGE === message) {
-    const requestCurrency = (request ?? "").toString().split("~")[2];
-    (tickersHandlers.get(requestCurrency) ?? []).forEach((fn) => fn(undefined));
-    unsubscribeFromTicker(requestCurrency);
+    MESSAGE: returnedMessage,
+    PARAMETER: sendedMessage
+  } = JSON.parse(eventMessage.data);
+  if (UCORRECT_MESSAGE === returnedMessage) {
+    const sendedCurrency = (sendedMessage ?? "").toString().split("~")[2];
+    updateHandler(sendedCurrency);
+    unsubscribeFromTicker(sendedCurrency);
   }
-  if (index !== AGGREGATE_INDEX || newPrice === undefined) {
-    return;
-  }
-  const handlers = tickersHandlers.get(currency) ?? [];
-  handlers.forEach((fn) => fn(newPrice));
+  if (index !== AGGREGATE_INDEX || newPrice === undefined) return;
+  updateHandler(currency, newPrice);
 });
 
+const updateHandler = (currency, newPrice) => {
+  const handlers = tickersHandlers.get(currency) ?? [];
+  handlers.forEach((fn) => fn(newPrice));
+};
+
 const subscribeToTickerOnWs = (ticker) => {
-  subscribedTickers.push(`5~CCCAGG~${ticker}~USD`);
+  subscribedTickers.push(
+    `${AGGREGATE_INDEX}~CCCAGG~${ticker}~${PRICE_CURRENCY}`
+  );
   sendToWebSocet({
     action: "SubAdd",
     subs: subscribedTickers
@@ -54,7 +52,9 @@ const subscribeToTickerOnWs = (ticker) => {
 
 const unsubscribeFromTickerOnWs = (ticker) => {
   const removeTicer = subscribedTickers.find(
-    (el) => el === `5~CCCAGG~${ticker}~USD`
+    (el) =>
+      el === `${AGGREGATE_INDEX}~CCCAGG~${ticker}~${PRICE_CURRENCY}` &&
+      ticker !== "ETH"
   );
   sendToWebSocet({
     action: "SubRemove",
@@ -78,6 +78,11 @@ const sendToWebSocet = (obj) => {
 };
 
 export const getCoinsNames = async () => {
+  subscribedTickers.push(`${AGGREGATE_INDEX}~CCCAGG~ETH~USD`);
+  sendToWebSocet({
+    action: "SubAdd",
+    subs: subscribedTickers
+  });
   const url = new URL("https://min-api.cryptocompare.com/data/all/coinlist");
   url.searchParams.set("summary", true);
   const data = async () => {

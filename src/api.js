@@ -52,9 +52,7 @@ const subscribeToTickerOnWs = (ticker) => {
 
 const unsubscribeFromTickerOnWs = (ticker) => {
   const removeTicer = subscribedTickers.find(
-    (el) =>
-      el === `${AGGREGATE_INDEX}~CCCAGG~${ticker}~${PRICE_CURRENCY}` &&
-      ticker !== "ETH"
+    (el) => el === `${AGGREGATE_INDEX}~CCCAGG~${ticker}~${PRICE_CURRENCY}`
   );
   sendToWebSocet({
     action: "SubRemove",
@@ -78,11 +76,6 @@ const sendToWebSocet = (obj) => {
 };
 
 export const getCoinsNames = async () => {
-  subscribedTickers.push(`${AGGREGATE_INDEX}~CCCAGG~ETH~USD`);
-  sendToWebSocet({
-    action: "SubAdd",
-    subs: subscribedTickers
-  });
   const url = new URL("https://min-api.cryptocompare.com/data/all/coinlist");
   url.searchParams.set("summary", true);
   const data = async () => {

@@ -222,7 +222,7 @@
 
 <script type="module">
 import { getCoinsNames, subscribeToTicker, unsubscribeFromTicker } from "./api";
-//border-gray-600 border-b-4 border-l-4
+
 export default {
   data() {
     return {

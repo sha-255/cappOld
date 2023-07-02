@@ -126,9 +126,9 @@
             :key="t.name"
             @click="select(t)"
             :class="{
-              'border-4': selectedTicker === t
+              'border-4 w-[99.9%] h-[99.9%]': selectedTicker === t
             }"
-            class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
+            class="bg-white items-end overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div
               :class="{ 'bg-red-100': t.price === undefined }"
@@ -144,7 +144,7 @@
             <div class="w-full border-t border-gray-200"></div>
             <button
               @click.stop="handleDelete(t)"
-              class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
+              class="flex items-start justify-center font-medium w-full h-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
             >
               <svg
                 class="h-5 w-5"
@@ -169,7 +169,10 @@
         v-if="selectedTicker && selectedTicker.price !== undefinedPriceText"
         class="relative"
       >
-        <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
+        <h3
+          class="text-lg leading-6 font-medium text-gray-900 my-8"
+          ref="graph"
+        >
           {{ selectedTicker.name }} - USD
         </h3>
         <div
@@ -178,8 +181,9 @@
           <div
             v-for="(bar, idx) in normalizedGraph"
             :key="idx"
-            :style="{ height: `${bar}%` }"
-            class="bg-transparent border-4 border-purple-800 w-8 h-24 rounded-lg"
+            :style="{ height: `${bar}%`, width: `${barWidth}px` }"
+            class="bg-transparent border-4 border-purple-800 rounded-lg"
+            ref="bar"
           ></div>
         </div>
         <button
@@ -235,12 +239,19 @@ export default {
       undefinedPriceText: "-",
       loadingPriceText: "...",
       errorVisible: false,
-      isStarted: true,
+      isLoading: true,
       page: 1,
-      graph: []
+      graph: [],
+      maxGraphElements: 1,
+      barWidth: 32
     };
   },
   methods: {
+    calculateMaxGraphElements() {
+      if (!this.$refs.graph) return;
+      this.maxGraphElements = this.$refs.graph.clientWidth / this.barWidth; //this.$refs.bar[0]?.clientWidth
+      console.log("!", this.maxGraphElements);
+    },
     updateTicker(tickerName, price) {
       this.tickers
         .filter((t) => t.name === tickerName)
@@ -248,9 +259,13 @@ export default {
           t.price = price;
           if (t === this.selectedTicker) {
             this.graph.push(price);
+            //fix to slice
+            while (this.graph.length > this.maxGraphElements) {
+              this.graph.shift();
+            }
           }
         });
-      console.table(this.tickers);
+      //console.table(this.tickers);
     },
     formatPrice(price) {
       if (
@@ -281,7 +296,7 @@ export default {
     },
     addByName(name) {
       const upperName = name.toUpperCase();
-      if (this.checkTicer(upperName)) {
+      if (this.ticerIsUncorrect(upperName)) {
         this.errVisible = true;
         return;
       }
@@ -293,16 +308,13 @@ export default {
       this.ticker = "";
       this.filter = "";
       subscribeToTicker(currentTicker.name, (newPrice) => {
-        if (newPrice === undefined) {
-          currentTicker.correct = false;
-        }
         this.updateTicker(currentTicker.name, newPrice);
       });
     },
     select(ticker) {
       this.selectedTicker = ticker;
     },
-    checkTicer(tickerIn) {
+    ticerIsUncorrect(tickerIn) {
       let result = false;
       this.tickers.forEach((ticker) => {
         if (ticker.name === tickerIn) result = true;
@@ -374,6 +386,7 @@ export default {
     },
     selectedTicker() {
       this.graph = [];
+      this.$nextTick().then(this.calculateMaxGraphElements);
     },
     paginatedTickers() {
       if (this.paginatedTickers.length === 0 && this.page > 1) {
@@ -408,7 +421,13 @@ export default {
     this.loadUrlSaves();
     this.loadTicersData();
     this.coinsNames = await getCoinsNames();
-    this.isStarted = false;
+    this.isLoading = false;
+  },
+  mounted() {
+    window.addEventListener("resize", this.calculateMaxGraphElements);
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.calculateMaxGraphElements);
   }
 };
 </script>

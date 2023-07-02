@@ -1,7 +1,7 @@
 const API_KEY =
-  "d9821aaef961306f2f68b3f0d0e12b60b0c2b2e270e01966c6bd4735c5aba675";
+  "ce476ecfd457397cabdbb30bc3d81e711eedd88c6cd371baaeb9c1827f10408d";
 const AGGREGATE_INDEX = "5";
-const UCORRECT_MESSAGE = "INVALID_SUB";
+const UNCORRECT_MESSAGE = "INVALID_SUB";
 const PRICE_CURRENCY = "USD";
 const wsUrl = new URL("wss://streamer.cryptocompare.com/v2");
 wsUrl.searchParams.set("api_key", API_KEY);
@@ -14,21 +14,18 @@ socket.addEventListener("message", (eventMessage) => {
     TYPE: index,
     FROMSYMBOL: currency,
     PRICE: newPrice,
-    MESSAGE: returnedMessage,
-    PARAMETER: sendedMessage
+    MESSAGE: sentMessage,
+    PARAMETER: returnedMessage
   } = JSON.parse(eventMessage.data);
-  if (returnedMessage === UCORRECT_MESSAGE) {
-    const sendedCurrency = (sendedMessage ?? "").toString().split("~")[2];
-    unsubscribeFromTicker(sendedCurrency);
-    subscribedTickers.push(`${AGGREGATE_INDEX}~CCCAGG~${sendedCurrency}~ETH`);
-    sendToWebSocet({
-      action: "SubAdd",
-      subs: subscribedTickers
-    });
+  console.log(sentMessage);
+  if (returnedMessage === UNCORRECT_MESSAGE) {
+    const requestCurrency = (sentMessage ?? "").toString().split("~")[2];
+    updateHandler(requestCurrency, undefined);
+    unsubscribeFromTicker(requestCurrency);
+    console.log("uncorrect");
   }
-  if (index === AGGREGATE_INDEX) {
-    updateHandler(currency, newPrice);
-  }
+  if (index !== AGGREGATE_INDEX || newPrice === undefined) return;
+  updateHandler(currency, newPrice);
 });
 
 const updateHandler = (currency, newPrice) => {
@@ -48,7 +45,9 @@ const subscribeToTickerOnWs = (ticker) => {
 
 const unsubscribeFromTickerOnWs = (ticker) => {
   const removeTicer = subscribedTickers.find(
-    (el) => el === `${AGGREGATE_INDEX}~CCCAGG~${ticker}~${PRICE_CURRENCY}`
+    (el) =>
+      el === `${AGGREGATE_INDEX}~CCCAGG~${ticker}~${PRICE_CURRENCY}` &&
+      ticker !== "ETH"
   );
   const idx = subscribedTickers.findIndex((el) => el === removeTicer);
   subscribedTickers.splice(idx, 1);
@@ -94,5 +93,3 @@ export const unsubscribeFromTicker = (ticker) => {
   tickersHandlers.delete(ticker);
   unsubscribeFromTickerOnWs(ticker);
 };
-
-window.st = subscribedTickers;

@@ -43,6 +43,12 @@ export default {
   emits: {
     "graph-close": null
   },
+  data() {
+    return {
+      graph: [],
+      maxGraphElements: 1
+    };
+  },
   methods: {
     calculateMaxGraphElements() {
       if (!this.$refs.graph) return;

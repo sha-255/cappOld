@@ -75,38 +75,11 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <!-- graph -->
-      <!-- v-if="selectedTicker && selectedTicker.price !== undefinedPriceText" -->
-      <section
+      <tickers-graph
         v-if="selectedTicker && selectedTicker.price !== undefinedPriceText"
-        class="relative"
-      >
-        <h3
-          class="text-lg leading-6 font-medium text-gray-900 my-8"
-          ref="graph"
-        >
-          {{ selectedTicker.name }} - USD
-        </h3>
-        <div
-          class="flex items-end border-gray-600 border-b-4 border-l-4 h-64 rounded-lg"
-        >
-          <div
-            v-for="(bar, idx) in normalizedGraph"
-            :key="idx"
-            :style="{ height: `${bar}%`, width: `${barWidth}px` }"
-            class="bg-transparent border-4 border-purple-800 rounded-lg"
-            ref="bar"
-          ></div>
-        </div>
-        <button
-          @click="selectedTicker = null"
-          type="button"
-          class="absolute top-0 right-0"
-        >
-          <cross-svg />
-        </button>
-      </section>
-      <!---->
+        :selectedTicker="selectedTicker"
+        @graph-close="selectedTicker = null"
+      />
     </div>
   </div>
 </template>
@@ -114,14 +87,14 @@
 <script type="module">
 import { getCoinsNames, subscribeToTicker, unsubscribeFromTicker } from "./api";
 import AddTicker from "./components/AddTicker.vue";
-import CrossSvg from "./components/CrossSvg.vue";
+import TickersGraph from "./components/TickersGraph.vue";
 import TrashSvg from "./components/TrashSvg.vue";
 import LoadingBar from "./components/LoadingBar.vue";
 
 export default {
   components: {
     AddTicker,
-    CrossSvg,
+    TickersGraph,
     TrashSvg,
     LoadingBar
   },
@@ -136,19 +109,10 @@ export default {
       loadingPriceText: "...",
       errorVisible: false,
       isLoading: true,
-      page: 1,
-      graph: [],
-      maxGraphElements: 1,
-      barWidth: 32
+      page: 1
     };
   },
   methods: {
-    //Graph
-    calculateMaxGraphElements() {
-      if (!this.$refs.graph) return;
-      this.maxGraphElements = this.$refs.graph.clientWidth / this.barWidth; //this.$refs.bar[0]?.clientWidth
-    },
-    ///
     updateTicker(tickerName, price) {
       this.tickers
         .filter((t) => t.name === tickerName)
@@ -260,16 +224,6 @@ export default {
     hasNextPage() {
       return this.filteredTickers.length > this.endIndex;
     },
-    //Graph
-    normalizedGraph() {
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
-      if (maxValue === minValue) return this.graph.map(() => 50);
-      return this.graph.map(
-        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
-      );
-    },
-    //
     pageStateOptions() {
       return {
         filter: this.filter,
